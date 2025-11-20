@@ -3,13 +3,41 @@ const { WebhookClient, Suggestion } = require("dialogflow-fulfillment");
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const MODEL_NAME = "gemini-1.5-pro-latest";
+const API_KEY = "AIzaSyAwbaPFT8k16GmIOM3Xd-tbX-L8Q5N5Ss8";
+const {
+    GoogleGenerativeAI,
+    HarmCategory,
+    HarmBlockThreshold,
+} = require("@google/generative-ai");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 const PORT = process.env.PORT || 8080;
+async function runChat(queryText) {
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    // console.log(genAI)
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
+    const generationConfig = {
+        temperature: 1,
+        topK: 0,
+        topP: 0.95,
+        maxOutputTokens: 200,
+    };
+
+    const chat = model.startChat({
+        generationConfig,
+        history: [
+        ],
+    });
+
+    const result = await chat.sendMessage(queryText);
+    const response = result.response;
+    return response.text();
+}
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
@@ -23,8 +51,47 @@ app.post("/webhook", async (req, res) => {
     agent.add("Hello there, I am hammad from serever side!");
   }
 
-  function fallback(agent) {
-    agent.add("Fallback Intent called!");
+      async function fallback() {
+        let action = req.body.queryResult.action;
+        let queryText = req.body.queryResult.queryText;
+
+        if (action === 'input.unknown') {
+            let result = await runChat(queryText);
+            agent.add(result);
+            console.log(result)
+        }else{
+            agent.add(result);
+            console.log(result)
+        }
+    }
+
+  async function fallback(agent) {
+     
+    let action = req.body.queryResult.action;
+    let queryText = req.body.queryResult.queryText;
+
+    if (action === 'input.unknown') {
+        let result = await textGeneration(queryText);
+        if (result.status == 1) {
+            res.send(
+                {
+                    fulfillmentText: result.response
+                }
+            );
+        } else {
+            res.send(
+                {
+                    fulfillmentText: `Sorry, I'm not able to help with that.`
+                }
+            );
+        }
+    } else {
+        res.send(
+            {
+                fulfillmentText: `No handler for the action ${action}.`
+            }
+        );
+    }
   }
 
   function booking(agent) {
