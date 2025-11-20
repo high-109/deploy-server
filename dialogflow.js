@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const MODEL_NAME = "gemini-1.5-pro-latest";
-const API_KEY = "AIzaSyAwbaPFT8k16GmIOM3Xd-tbX-L8Q5N5Ss8";
+const API_KEY = "";
 const {
     GoogleGenerativeAI,
     HarmCategory,
